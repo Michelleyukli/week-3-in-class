@@ -1,10 +1,10 @@
-import os
+import streamlit as st
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-import streamlit as st
+import os
 
-load_dotenv()  # Ensure the environment variables are loaded
+load_dotenv()  # This command loads the environment variables from the .env file
 
 def connect_db():
     database_url = os.getenv("DATABASE_URL")
