@@ -1,5 +1,5 @@
 streamlit
 pandas
 seaborn
-psycopg-2binary
+psycopg2-binary
 python-dotenv
