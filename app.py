@@ -1,15 +1,22 @@
 import os
 import psycopg2
-import psycopg2.extras
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import streamlit as st
 
-# Load environment variables
-load_dotenv()
+load_dotenv()  # Ensure the environment variables are loaded
 
-# Database connection setup
 def connect_db():
-    return psycopg2.connect(os.getenv("DATABASE_URL"), cursor_factory=psycopg2.extras.RealDictCursor)
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        st.error("Database URL is not set.")
+        raise ValueError("DATABASE_URL is not set in environment variables")
+    try:
+        con = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
+        return con
+    except psycopg2.OperationalError as e:
+        st.error(f"Failed to connect to the database: {e}")
+        raise
 
 # Ensure database table is created
 def setup_db():
