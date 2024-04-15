@@ -1,5 +1,5 @@
 streamlit
 pandas
 seaborn
-matplotlib
-pytz
+psycopg-2binary
+python-dotenv
