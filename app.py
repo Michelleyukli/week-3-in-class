@@ -18,7 +18,6 @@ def connect_db():
         st.error(f"Failed to connect to the database: {e}")
         raise
 
-# Ensure database table is created
 def setup_db():
     with connect_db() as con:
         with con.cursor() as cur:
@@ -34,7 +33,45 @@ def setup_db():
             """)
             con.commit()
 
-# Add streamlit widgets and handlers for CRUD operations, searching, and filtering
+def add_or_update_prompt(title, text, favorite):
+    # Check if the prompt exists
+    with connect_db() as con:
+        with con.cursor() as cur:
+            # Attempt to update if the prompt already exists (assumes title is unique)
+            cur.execute("UPDATE prompts SET prompt = %s, favorite = %s WHERE title = %s RETURNING id", (text, favorite, title))
+            if cur.rowcount == 0:
+                # Insert new prompt if not existing
+                cur.execute("INSERT INTO prompts (title, prompt, favorite) VALUES (%s, %s, %s)", (title, text, favorite))
+            con.commit()
+
+def display_prompts():
+    with connect_db() as con:
+        with con.cursor() as cur:
+            cur.execute("SELECT id, title, prompt, favorite FROM prompts")
+            prompts = cur.fetchall()
+            for prompt in prompts:
+                with st.expander(f"{prompt['title']} {'(Favorite)' if prompt['favorite'] else ''}"):
+                    st.text_area("Prompt", value=prompt['prompt'], key=f"{prompt['id']}_text")
+                    if st.button("Save", key=f"{prompt['id']}_save"):
+                        update_text = st.session_state[f"{prompt['id']}_text"]
+                        add_or_update_prompt(prompt['title'], update_text, prompt['favorite'])
+                    if st.button("Delete", key=f"{prompt['id']}_delete"):
+                        delete_prompt(prompt['id'])
+                    if st.button("Toggle Favorite", key=f"{prompt['id']}_fav"):
+                        toggle_favorite(prompt['id'], not prompt['favorite'])
+
+def delete_prompt(prompt_id):
+    with connect_db() as con:
+        with con.cursor() as cur:
+            cur.execute("DELETE FROM prompts WHERE id = %s", (prompt_id,))
+            con.commit()
+
+def toggle_favorite(prompt_id, new_status):
+    with connect_db() as con:
+        with con.cursor() as cur:
+            cur.execute("UPDATE prompts SET favorite = %s WHERE id = %s", (new_status, prompt_id))
+            con.commit()
+
 def main():
     st.title("ChatGPT Prompt Manager")
     setup_db()
@@ -47,17 +84,10 @@ def main():
         submit = st.form_submit_button("Save Prompt")
         if submit and title and prompt_text:
             add_or_update_prompt(title, prompt_text, favorite)
+            st.success("Prompt saved!")
 
     # Display and manage existing prompts
     display_prompts()
-
-def add_or_update_prompt(title, text, favorite):
-    # Function to add or update prompts in the database
-    pass
-
-def display_prompts():
-    # Function to display prompts with options to edit, delete, and mark as favorite
-    pass
 
 if __name__ == "__main__":
     main()
